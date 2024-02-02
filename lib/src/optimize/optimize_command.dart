@@ -122,9 +122,19 @@ class OptimizeCommand extends Command<void> {
     _disposeIsolate();
     _fixCanvasKits();
 
+    _injectflutterJSHashReference();
+
     // _tmpFixCanvasKitRenderer();
 
     Logger.info('end web optimize');
+  }
+
+  void _injectflutterJSHashReference() {
+    File file = File("$_webOutput/index.html");
+    String html = file.readAsStringSync();
+    html = html.replaceAll(
+        'flutter.js', _hashFileManifest['flutter.js'] ?? 'flutter.js');
+    file.writeAsStringSync(html);
   }
 
   void _fixCanvasKits() {
