@@ -120,8 +120,45 @@ class OptimizeCommand extends Command<void> {
     await _cdnAssets();
 
     _disposeIsolate();
+    _fixCanvasKits();
+
+    _injectflutterJSHashReference();
+
+    // _tmpFixCanvasKitRenderer();
 
     Logger.info('end web optimize');
+  }
+
+  void _injectflutterJSHashReference() {
+    File file = File("$_webOutput/index.html");
+    String html = file.readAsStringSync();
+    html = html.replaceAll(
+        'flutter.js', _hashFileManifest['flutter.js'] ?? 'flutter.js');
+    file.writeAsStringSync(html);
+  }
+
+  void _fixCanvasKits() {
+    _tmpFixCanvasKitRenderer('canvaskit/canvaskit.js');
+    _tmpFixCanvasKitRenderer('canvaskit/chromium/canvaskit.js');
+  }
+
+  void _tmpFixCanvasKitRenderer(String path) {
+    File? canvasKitRoot = File('$_webOutput/$path');
+    String canvasKitCode = canvasKitRoot.readAsStringSync();
+    canvasKitCode = _insertCodeBeforeReturn(
+        canvasKitCode, "_scriptDir = _scriptDir.toString();");
+    canvasKitRoot.writeAsStringSync(canvasKitCode);
+  }
+
+  String _insertCodeBeforeReturn(String jsCode, String newLine) {
+    final returnIndex = jsCode.indexOf('return');
+    if (returnIndex == -1) {
+      // 'return' not found, maybe handle this case as needed.
+      return jsCode;
+    }
+
+    // Insert the new line before the first 'return'.
+    return '${jsCode.substring(0, returnIndex)}$newLine\n${jsCode.substring(returnIndex)}';
   }
 
   /// 解析命令行参数
